@@ -804,8 +804,8 @@ function Material3.new(config)
 		return button
 	end
 
-	local minimizeButton = createTopAction("MinimizeButton", "-")
-	local closeButton = createTopAction("CloseButton", "x")
+	local minimizeButton = createTopAction("MinimizeButton", "—")
+	local closeButton = createTopAction("CloseButton", "✕")
 
 	local navigation = create("Frame", {
 		Name = "Navigation",
