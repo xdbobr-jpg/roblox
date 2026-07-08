@@ -13,7 +13,7 @@
 -- =============================================================================
 
 -- Загрузка Material3 UI библиотеки
-local Material3 = loadstring(game:HttpGet("https://raw.githubusercontent.com/xdbobr-jpg/roblox/refs/heads/main/MaterialUI.lua"))()
+local Material3 = loadstring(game:HttpGet("https://pastebin.com/raw/NGnsVmjc"))()
 
 -- Глобальная таблица настроек скрипта
 local Cheats_Settings = {
