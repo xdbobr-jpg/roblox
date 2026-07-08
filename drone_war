@@ -1,0 +1,572 @@
+-- =============================================================================
+-- BASE ENGINE: Gemini Suite (Multi-Language Release)
+-- DEVELOPER/AI: Gemini
+-- YEAR: 2026
+-- этот код написан нейросетью таааак что... можете даже не расчитывать на нормальную работу :)
+-- если хотите модифицировать скрипт тоооо ну... конечно спорное решение учитывая то что я написал выше но я не против ведь не хочу присваивать заслуги нейросети себе
+-- кстати ui библиотека тоже мой вайбкод
+-- связь со мной в тг: @splun4k
+-- this code was written by a AI soooo... you can't even count on it working properly :)
+-- if you want to modify the script, well... of course it’s a controversial decision considering what I wrote above, but I don’t mind because I don’t want to take credit for the neural network’s achievements
+-- btw, the ui library is also my vibecode
+-- contact me in telegram: @splun4k
+-- =============================================================================
+
+-- Загрузка Material3 UI библиотеки
+local Material3 = loadstring(game:HttpGet("https://pastebin.com/raw/NGnsVmjc"))()
+
+-- Глобальная таблица настроек скрипта
+local Cheats_Settings = {
+	-- Настройки ESP для Игроков
+	PlayersEnabled = false,
+	PlayersTextEnabled = false,
+	PlayersFillTrans = 0.5,
+	PlayersOutlineTrans = 0,
+	
+	-- Настройки ESP для Дронов
+	DronesEnabled = false,
+	DronesTextEnabled = false,
+	DronesFillTrans = 0.3,
+	DronesOutlineTrans = 0,
+	DroneColor = Color3.fromRGB(255, 115, 0),
+	
+	-- Настройки Аимбота
+	AimEnabled = false,
+	AimMethod = "Camera (CFrame)", 
+	AimTarget = "Head", 
+	TargetPlayers = true, 
+	TargetDrones = false, 
+	TeamCheck = false,
+	WallCheck = false,
+	AimSmoothness = 1,
+	ShowFovCircle = false,
+	FovRadius = 100,
+	FovColor = Color3.fromRGB(255, 0, 0)
+}
+
+-- Сервисы Roblox
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Camera = Workspace.CurrentCamera
+
+-- Эмуляция физической мыши (если поддерживается экзекутором)
+local mousemove = mousemoverel or (Input and Input.MouseMove) or nil
+
+-- Отрисовка FOV круга через Core Drawing API
+local FovCircle = Drawing.new("Circle")
+FovCircle.Thickness = 1
+FovCircle.NumSides = 64
+FovCircle.Filled = false
+FovCircle.Visible = false
+
+-- Список отслеживаемых моделей дронов (Регистр игнорируется при сверке)
+local TargetDronesList = {
+	["shahed-136 white"] = true, ["shahed-136 black"] = true, ["gerbera"] = true,
+	["fp1"] = true, ["shahed 238"] = true, ["italmas"] = true,
+	["molniy"] = true, ["flamingo"] = true, ["kalibr"] = true,
+	["geran5"] = true, ["fpv"] = true, ["interceptor"] = true,
+	["romaska"] = true, ["newfpv"] = true
+}
+
+-- Таблица локализации (Языковые пакеты)
+local Localization = {
+	ru = {
+		Title = "Gemini Engine Suite", Subtitle = "Публичный Релиз",
+		AimPage = "Аимбот", AimTitle = "Настройки Аимбота", AimDesc = "Автоматическое удержание и захват целей в FOV.",
+		EnableAim = "Включить Авто-Аимбот", AimDescToggle = "Постоянно наводит прицел на выбранные категории",
+		AimKey = "Кнопка переключения аима", TargetP = "Цель: Игроки", TargetPDesc = "Разрешить наведение на игровых персонажей",
+		TargetD = "Цель: Дроны", TargetDDesc = "Разрешить наведение на БПЛА и дроны", Method = "Метод наведения",
+		TeamC = "Проверка команды (Team Check)", WallC = "Проверка стен (Wall Check)", Bone = "Часть тела для наводки",
+		Smooth = "Плавность аимбота", DrawFov = "Показывать круг FOV", Radius = "Радиус FOV", FovColor = "Цвет круга FOV",
+		
+		PlayersPage = "ВХ Игроки", PTitle = "Радар Пехоты", PDesc = "Отображение игроков сквозь стены.",
+		EnableP = "Включить ВХ на Игроков", PKey = "Кнопка ВХ Игроков", PText = "Показывать Ники и Дистанцию", PTrans = "Прозрачность заливки",
+		
+		DronesPage = "ВХ Дроны", DTitle = "Радар ПВО", DDesc = "Отображение воздушных дронов сквозь стены.",
+		EnableD = "Включить ВХ на Дроны", DKey = "Кнопка ВХ Дронов", DText = "Показывать Названия и Дистанцию", DColor = "Дефолтный цвет дрона", DTrans = "Прозрачность заливки дронов",
+		Notify = "Gemini загружен успешно! Выберите нужные функции."
+	},
+	en = {
+		Title = "Gemini Engine Suite", Subtitle = "Public Release",
+		AimPage = "Aimbot", AimTitle = "Aimbot Settings", AimDesc = "Automatic tracking and locking targets within FOV.",
+		EnableAim = "Enable Auto-Aimbot", AimDescToggle = "Constantly locks aim onto selected categories",
+		AimKey = "Aimbot Toggle Keybind", TargetP = "Target: Players", TargetPDesc = "Allow locking onto real player models",
+		TargetD = "Target: Drones", TargetDDesc = "Allow locking onto UAVs and drone models", Method = "Aim Input Method",
+		TeamC = "Team Check", WallC = "Wall Check", Bone = "Player Bone Focus",
+		Smooth = "Aim Smoothness", DrawFov = "Draw FOV Circle", Radius = "FOV Radius", FovColor = "FOV Circle Color",
+		
+		PlayersPage = "Player ESP", PTitle = "Infantry Radar", PDesc = "Display players through walls.",
+		EnableP = "Enable Player ESP", PKey = "Player ESP Keybind", PText = "Show Names & Distance", PTrans = "Fill Transparency",
+		
+		DronesPage = "Drone ESP", DTitle = "Air Defense Radar", DDesc = "Display aerial drones through objects.",
+		EnableD = "Enable Drones ESP", DKey = "Drone ESP Keybind", DText = "Show Drone Names & Distance", DColor = "Fallback Drone Color", DTrans = "Drone Fill Transparency",
+		Notify = "Gemini loaded successfully! Toggle features in menu."
+	}
+}
+
+-- Динамическое обновление позиции и цвета круга FOV
+RunService.RenderStepped:Connect(function()
+	if Cheats_Settings.ShowFovCircle and Cheats_Settings.AimEnabled then
+		local mousePos = UserInputService:GetMouseLocation()
+		FovCircle.Position = mousePos
+		FovCircle.Radius = Cheats_Settings.FovRadius
+		FovCircle.Color = Cheats_Settings.FovColor
+		FovCircle.Visible = true
+	else
+		FovCircle.Visible = false
+	end
+end)
+
+-- Проверка: является ли объект валидным дроном из списка
+local function isTargetDrone(object)
+	if object:IsA("Model") and object.Name then
+		return TargetDronesList[string.lower(object.Name)] ~= nil
+	end
+	return false
+end
+
+-- Безопасное получение цвета команды игрока
+local function getPlayerColor(player)
+	if player.Team and player.TeamColor then
+		return player.TeamColor.Color
+	end
+	return Color3.fromRGB(255, 255, 255)
+end
+
+-- Поиск сиденья внутри модели дрона
+local function getDroneSeat(droneModel)
+	return droneModel:FindFirstChildOfClass("VehicleSeat") or droneModel:FindFirstChild("VehicleSeat", true)
+end
+
+-- Поиск фюзеляжа (основной детали) дрона для точного наведения
+local function getValidDronePart(droneModel)
+	if droneModel.PrimaryPart and not droneModel.PrimaryPart:IsA("VehicleSeat") then
+		return droneModel.PrimaryPart
+	end
+	local bodyNames = {"base", "main", "body", "chassis", "hull", "part"}
+	for _, name in ipairs(bodyNames) do
+		local found = droneModel:FindFirstChild(name, true)
+		if found and found:IsA("BasePart") and not found:IsA("VehicleSeat") then
+			return found
+		end
+	end
+	for _, child in ipairs(droneModel:GetDescendants()) do
+		if child:IsA("BasePart") and not child:IsA("VehicleSeat") then
+			return child
+		end
+	end
+	return nil
+end
+
+-- Определение пилота, сидящего в дроне
+local function getDronePilot(droneModel)
+	local seat = getDroneSeat(droneModel)
+	if seat and seat.Occupant then
+		local char = seat.Occupant.Parent
+		if char then
+			return Players:GetPlayerFromCharacter(char)
+		end
+	end
+	return nil
+end
+
+-- Трассировка лучей для проверки видимости цели (Wall Check)
+local function isTargetVisible(targetPart)
+	local origin = Camera.CFrame.Position
+	local direction = targetPart.Position - origin
+	local raycastParams = RaycastParams.new()
+	raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+	raycastParams.FilterDescendantsInstances = {LocalPlayer.Character, targetPart.Parent}
+	
+	local result = Workspace:Raycast(origin, direction, raycastParams)
+	return result == nil
+end
+
+-- Алгоритм поиска ближайшей к курсору цели по заданным критериям
+local function getClosestAimTarget()
+	local closestTargetPart = nil
+	local shortestDistance = Cheats_Settings.FovRadius
+	local mousePos = UserInputService:GetMouseLocation()
+	
+	-- Проверка игроков
+	if Cheats_Settings.TargetPlayers then
+		for _, player in ipairs(Players:GetPlayers()) do
+			if player ~= LocalPlayer and player.Character then
+				local isAllowed = not Cheats_Settings.TeamCheck or (player.Team ~= LocalPlayer.Team)
+				
+				if isAllowed then
+					local targetPart = player.Character:FindFirstChild(Cheats_Settings.AimTarget)
+					local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+					
+					if targetPart and humanoid and humanoid.Health > 0 then
+						local screenPos, onScreen = Camera:WorldToScreenPoint(targetPart.Position)
+						if onScreen then
+							local distanceToMouse = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
+							if distanceToMouse < shortestDistance then
+								if not Cheats_Settings.WallCheck or isTargetVisible(targetPart) then
+									shortestDistance = distanceToMouse
+									closestTargetPart = targetPart
+								end
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+	
+	-- Проверка дронов
+	if Cheats_Settings.TargetDrones then
+		for _, obj in ipairs(Workspace:GetChildren()) do
+			if isTargetDrone(obj) then
+				local dronePart = getValidDronePart(obj)
+				if dronePart then
+					local screenPos, onScreen = Camera:WorldToScreenPoint(dronePart.Position)
+					if onScreen then
+						local distanceToMouse = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
+						if distanceToMouse < shortestDistance then
+							if not Cheats_Settings.WallCheck or isTargetVisible(dronePart) then
+								shortestDistance = distanceToMouse
+								closestTargetPart = dronePart
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+	
+	return closestTargetPart
+end
+
+-- Бесконечный цикл аимбота, привязанный к тикам рендера камеры
+RunService.RenderStepped:Connect(function()
+	if not Cheats_Settings.AimEnabled then return end
+	
+	local target = getClosestAimTarget()
+	if target then
+		if Cheats_Settings.AimMethod == "Camera (CFrame)" then
+			local currentCFrame = Camera.CFrame
+			local targetCFrame = CFrame.new(currentCFrame.Position, target.Position)
+			Camera.CFrame = currentCFrame:Lerp(targetCFrame, 1 / Cheats_Settings.AimSmoothness)
+		elseif Cheats_Settings.AimMethod == "Mouse (mousemoverel)" and mousemove then
+			local screenPos, onScreen = Camera:WorldToScreenPoint(target.Position)
+			if onScreen then
+				local mousePos = UserInputService:GetMouseLocation()
+				local moveX = (screenPos.X - mousePos.X) / Cheats_Settings.AimSmoothness
+				local moveY = (screenPos.Y - mousePos.Y) / Cheats_Settings.AimSmoothness
+				mousemove(math.round(moveX), math.round(moveY))
+			end
+		end
+	end
+end)
+
+-- Фоновый поток для работы визуальных модулей (ESP / Wallhack)
+task.spawn(function()
+	while true do
+		task.wait(0.1)
+		
+		-- Отрисовка ESP на Игроков
+		for _, player in ipairs(Players:GetPlayers()) do
+			if player ~= LocalPlayer and player.Character then
+				local highlight = player.Character:FindFirstChild("Gemini_HighlightESP")
+				local bbgui = player.Character:FindFirstChild("Gemini_TextESP")
+				
+				if Cheats_Settings.PlayersEnabled then
+					if not highlight then
+						highlight = Instance.new("Highlight", player.Character)
+						highlight.Name = "Gemini_HighlightESP"
+						highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+					end
+					highlight.FillColor = getPlayerColor(player)
+					highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+					highlight.FillTransparency = Cheats_Settings.PlayersFillTrans
+					highlight.OutlineTransparency = Cheats_Settings.PlayersOutlineTrans
+					
+					if Cheats_Settings.PlayersTextEnabled then
+						if not bbgui then
+							bbgui = Instance.new("BillboardGui", player.Character)
+							bbgui.Name = "Gemini_TextESP"
+							bbgui.AlwaysOnTop = true
+							bbgui.Size = UDim2.new(0, 200, 0, 50)
+							bbgui.StudsOffset = Vector3.new(0, 3, 0)
+							local label = Instance.new("TextLabel", bbgui)
+							label.Name = "ESPText"
+							label.Size = UDim2.new(1, 0, 1, 0)
+							label.BackgroundTransparency = 1
+							label.TextStrokeTransparency = 0
+							label.Font = Enum.Font.SourceSansBold
+							label.TextSize = 14
+						end
+						local targetPart = player.Character:FindFirstChild("Head") or player.Character.PrimaryPart
+						if targetPart then
+							bbgui.Adornee = targetPart
+							local dist = math.round((Camera.CFrame.Position - targetPart.Position).Magnitude)
+							bbgui.ESPText.Text = player.Name .. " [" .. tostring(dist) .. " Studs]"
+							bbgui.ESPText.TextColor3 = getPlayerColor(player)
+						end
+					elseif bbgui then bbgui:Destroy() end
+				else
+					if highlight then highlight:Destroy() end
+					if bbgui then bbgui:Destroy() end
+				end
+			end
+		end
+		
+		-- Отрисовка ESP на Дроны
+		for _, obj in ipairs(Workspace:GetChildren()) do
+			if isTargetDrone(obj) then
+				local highlight = obj:FindFirstChild("Gemini_HighlightESP")
+				local bbgui = obj:FindFirstChild("Gemini_TextESP")
+				local dronePart = getValidDronePart(obj)
+				
+				if Cheats_Settings.DronesEnabled and dronePart then
+					local dynamicColor = Cheats_Settings.DroneColor
+					local pilot = getDronePilot(obj)
+					if pilot then dynamicColor = getPlayerColor(pilot) end
+					
+					if not highlight then
+						highlight = Instance.new("Highlight", obj)
+						highlight.Name = "Gemini_HighlightESP"
+						highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+					end
+					highlight.FillColor = dynamicColor
+					highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+					highlight.FillTransparency = Cheats_Settings.DronesFillTrans
+					highlight.OutlineTransparency = Cheats_Settings.DronesOutlineTrans
+					
+					if Cheats_Settings.DronesTextEnabled then
+						if not bbgui then
+							bbgui = Instance.new("BillboardGui", obj)
+							bbgui.Name = "Gemini_TextESP"
+							bbgui.AlwaysOnTop = true
+							bbgui.Size = UDim2.new(0, 250, 0, 50)
+							bbgui.StudsOffset = Vector3.new(0, 3, 0)
+							local label = Instance.new("TextLabel", bbgui)
+							label.Name = "ESPText"
+							label.Size = UDim2.new(1, 0, 1, 0)
+							label.BackgroundTransparency = 1
+							label.TextStrokeTransparency = 0
+						end
+						bbgui.Adornee = dronePart
+						local dist = math.round((Camera.CFrame.Position - dronePart.Position).Magnitude)
+						bbgui.ESPText.Font = Enum.Font.RobotoMono
+						bbgui.ESPText.TextSize = 13
+						bbgui.ESPText.Text = "🛸 [" .. string.upper(obj.Name) .. " | " .. tostring(dist) .. "m]"
+						bbgui.ESPText.TextColor3 = dynamicColor
+					elseif bbgui then bbgui:Destroy() end
+				else
+					if highlight then highlight:Destroy() end
+					if bbgui then bbgui:Destroy() end
+				end
+			end
+		end
+	end
+end)
+
+
+-- =============================================================================
+-- ИНИЦИАЛИЗАЦИЯ ИНТЕРФЕЙСА (СТАРТОВОЕ ОКНО ВЫБОРА ЯЗЫКА)
+-- =============================================================================
+
+-- Создаем базовое окно лаунчера
+local langWindow = Material3.CreateWindow({
+	Name = "GeminiInit",
+	Title = "Gemini Engine Setup",
+	Subtitle = "Select Interface Language / Выберите язык",
+	Theme = { mode = "dark", acrylic = true }
+})
+
+local langPage = langWindow:CreatePage({ Name = "Language", Title = "Language / Язык" })
+local langSection = langPage:CreateSection({ Title = "Setup Wizard", Description = "Please choose your preferred language to build the suite." })
+
+-- Функция генерации главного меню на основе выбранного языкового пакета
+local function BuildMainMenu(ln)
+	-- Удаляем окно выбора языка, чтобы освободить экран
+	langWindow:Destroy()
+	
+	-- Собираем основное рабочее окно чита
+	local window = Material3.CreateWindow({
+		Name = "GeminiHub",
+		Title = ln.Title,
+		Subtitle = ln.Subtitle,
+		Theme = { mode = "dark", acrylic = true },
+	})
+
+	-- --- ВКЛАДКА 1: AIMBOT ---
+	local aimPage = window:CreatePage({ Name = ln.AimPage, Title = ln.AimPage })
+	local aimSection = aimPage:CreateSection({ Title = ln.AimTitle, Description = ln.AimDesc })
+
+	local aimToggle = aimSection:CreateToggle({
+		Title = ln.EnableAim,
+		Description = ln.AimDescToggle,
+		Default = false,
+		Callback = function(value) Cheats_Settings.AimEnabled = value end
+	})
+
+	aimSection:CreateKeybind({
+		Title = ln.AimKey,
+		Default = Enum.KeyCode.F,
+		Callback = function()
+			local newState = not Cheats_Settings.AimEnabled
+			Cheats_Settings.AimEnabled = newState
+			aimToggle:SetValue(newState)
+		end
+	})
+
+	aimSection:CreateToggle({
+		Title = ln.TargetP,
+		Description = ln.TargetPDesc,
+		Default = true,
+		Callback = function(value) Cheats_Settings.TargetPlayers = value end
+	})
+
+	aimSection:CreateToggle({
+		Title = ln.TargetD,
+		Description = ln.TargetDDesc,
+		Default = false,
+		Callback = function(value) Cheats_Settings.TargetDrones = value end
+	})
+
+	aimSection:CreateDropdown({
+		Title = ln.Method,
+		Values = { "Camera (CFrame)", "Mouse (mousemoverel)" },
+		Default = "Camera (CFrame)",
+		Callback = function(value) Cheats_Settings.AimMethod = value end
+	})
+
+	aimSection:CreateToggle({
+		Title = ln.TeamC,
+		Default = false,
+		Callback = function(value) Cheats_Settings.TeamCheck = value end
+	})
+
+	aimSection:CreateToggle({
+		Title = ln.WallC,
+		Default = false,
+		Callback = function(value) Cheats_Settings.WallCheck = value end
+	})
+
+	aimSection:CreateDropdown({
+		Title = ln.Bone,
+		Values = { "Head", "HumanoidRootPart" },
+		Default = "Head",
+		Callback = function(value) Cheats_Settings.AimTarget = value end
+	})
+
+	aimSection:CreateSlider({
+		Title = ln.Smooth,
+		Min = 1, Max = 10, Step = 0.5, Default = 1,
+		Callback = function(value) Cheats_Settings.AimSmoothness = value end
+	})
+
+	aimSection:CreateToggle({
+		Title = ln.DrawFov,
+		Default = false,
+		Callback = function(value) Cheats_Settings.ShowFovCircle = value end
+	})
+
+	aimSection:CreateSlider({
+		Title = ln.Radius,
+		Min = 30, Max = 400, Step = 5, Default = 100,
+		Callback = function(value) Cheats_Settings.FovRadius = value end
+	})
+
+	aimSection:CreateColorPicker({
+		Title = ln.FovColor,
+		Default = Color3.fromRGB(255, 0, 0),
+		Callback = function(color) Cheats_Settings.FovColor = color end
+	})
+
+
+	-- --- ВКЛАДКА 2: ESP ИГРОКИ ---
+	local playersPage = window:CreatePage({ Name = ln.PlayersPage, Title = ln.PlayersPage })
+	local pSection = playersPage:CreateSection({ Title = ln.PTitle, Description = ln.PDesc })
+
+	local playerEspToggle = pSection:CreateToggle({
+		Title = ln.EnableP,
+		Default = false,
+		Callback = function(value) Cheats_Settings.PlayersEnabled = value end
+	})
+
+	pSection:CreateKeybind({
+		Title = ln.PKey,
+		Default = Enum.KeyCode.G,
+		Callback = function()
+			local newState = not Cheats_Settings.PlayersEnabled
+			Cheats_Settings.PlayersEnabled = newState
+			playerEspToggle:SetValue(newState)
+		end
+	})
+
+	pSection:CreateToggle({
+		Title = ln.PText,
+		Default = false,
+		Callback = function(value) Cheats_Settings.PlayersTextEnabled = value end
+	})
+
+	pSection:CreateSlider({
+		Title = ln.PTrans,
+		Min = 0, Max = 1, Step = 0.1, Default = 0.5,
+		Callback = function(value) Cheats_Settings.PlayersFillTrans = value end
+	})
+
+
+	-- --- ВКЛАДКА 3: ESP ДРОНЫ ---
+	local dronesPage = window:CreatePage({ Name = ln.DronesPage, Title = ln.DronesPage })
+	local dSection = dronesPage:CreateSection({ Title = ln.DTitle, Description = ln.DDesc })
+
+	local droneEspToggle = dSection:CreateToggle({
+		Title = ln.EnableD,
+		Default = false,
+		Callback = function(value) Cheats_Settings.DronesEnabled = value end
+	})
+
+	dSection:CreateKeybind({
+		Title = ln.DKey,
+		Default = Enum.KeyCode.H,
+		Callback = function()
+			local newState = not Cheats_Settings.DronesEnabled
+			Cheats_Settings.DronesEnabled = newState
+			droneEspToggle:SetValue(newState)
+		end
+	})
+
+	dSection:CreateToggle({
+		Title = ln.DText,
+		Default = false,
+		Callback = function(value) Cheats_Settings.DronesTextEnabled = value end
+	})
+
+	dSection:CreateColorPicker({
+		Title = ln.DColor,
+		Default = Color3.fromRGB(255, 115, 0),
+		Callback = function(color) Cheats_Settings.DroneColor = color end
+	})
+
+	dSection:CreateSlider({
+		Title = ln.DTrans,
+		Min = 0, Max = 1, Step = 0.1, Default = 0.3,
+		Callback = function(value) Cheats_Settings.DronesFillTrans = value end
+	})
+
+	-- Приветственное уведомление релизной сборки
+	window:Notify({
+		Content = ln.Notify,
+		Duration = 5,
+	})
+end
+
+-- Кнопки выбора языка в стартовом лаунчере
+langSection:CreateButton({
+	Title = "Русский язык",
+	Callback = function() BuildMainMenu(Localization.ru) end
+})
+
+langSection:CreateButton({
+	Title = "English Language",
+	Callback = function() BuildMainMenu(Localization.en) end
+})
