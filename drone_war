@@ -13,7 +13,7 @@
 -- =============================================================================
 
 -- Загрузка Material3 UI библиотеки
-local Material3 = loadstring(game:HttpGet("https://pastebin.com/raw/NGnsVmjc"))()
+local Material3 = loadstring(game:HttpGet("https://raw.githubusercontent.com/xdbobr-jpg/roblox/refs/heads/main/MaterialUI.lua"))()
 
 -- Глобальная таблица настроек скрипта
 local Cheats_Settings = {
@@ -377,7 +377,7 @@ local langWindow = Material3.CreateWindow({
 	Name = "GeminiInit",
 	Title = "Gemini Engine Setup",
 	Subtitle = "Select Interface Language / Выберите язык",
-	Theme = { mode = "dark", acrylic = true }
+	Theme = { mode = "dark", acrylic = false }
 })
 
 local langPage = langWindow:CreatePage({ Name = "Language", Title = "Language / Язык" })
@@ -393,7 +393,7 @@ local function BuildMainMenu(ln)
 		Name = "GeminiHub",
 		Title = ln.Title,
 		Subtitle = ln.Subtitle,
-		Theme = { mode = "dark", acrylic = true },
+		Theme = { mode = "dark", acrylic = false },
 	})
 
 	-- --- ВКЛАДКА 1: AIMBOT ---
