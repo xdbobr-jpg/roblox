@@ -804,8 +804,8 @@ function Material3.new(config)
 		return button
 	end
 
-	local minimizeButton = createTopAction("MinimizeButton", "—")
-	local closeButton = createTopAction("CloseButton", "✕")
+	local minimizeButton = createTopAction("MinimizeButton", "вЂ”")
+	local closeButton = createTopAction("CloseButton", "вњ•")
 
 	local navigation = create("Frame", {
 		Name = "Navigation",
@@ -1633,21 +1633,12 @@ function Window:ApplyTheme(mode)
 	end
 
 	for page, button in pairs(self.Tabs) do
-		local indicator = button:FindFirstChild("Indicator")
 		if self.CurrentPage == page then
 			button.BackgroundColor3 = colors.secondaryContainer
 			button.TextColor3 = colors.onSecondaryContainer
-			if indicator then
-				indicator.BackgroundColor3 = colors.primary
-				indicator.BackgroundTransparency = 0
-			end
 		else
 			button.BackgroundColor3 = colors.surface
 			button.TextColor3 = colors.onSurfaceVariant
-			if indicator then
-				indicator.BackgroundColor3 = colors.primary
-				indicator.BackgroundTransparency = 1
-			end
 		end
 	end
 
@@ -1724,11 +1715,6 @@ function Window:SelectPage(page)
 		if tabButton then
 			tabButton.BackgroundColor3 = self.Library.Colors.surface
 			tabButton.TextColor3 = self.Library.Colors.onSurfaceVariant
-			local indicator = tabButton:FindFirstChild("Indicator")
-			if indicator then
-				indicator.BackgroundColor3 = self.Library.Colors.primary
-				indicator.BackgroundTransparency = 1
-			end
 		end
 	end
 
@@ -1737,13 +1723,8 @@ function Window:SelectPage(page)
 
 	local selected = self.Tabs[page]
 	if selected then
-		selected.BackgroundColor3 = self.Library.Colors.secondaryContainer
-		selected.TextColor3 = self.Library.Colors.onSecondaryContainer
-		local indicator = selected:FindFirstChild("Indicator")
-		if indicator then
-			indicator.BackgroundColor3 = self.Library.Colors.primary
-			indicator.BackgroundTransparency = 0
-		end
+		selected.BackgroundColor3 = self.Library.Colors.surfaceContainerHigh
+		selected.TextColor3 = self.Library.Colors.onSurface
 	end
 end
 
@@ -1762,18 +1743,7 @@ function Window:CreatePage(config)
 		})
 		applyTextStyle(pageButton, "labelLarge", self.Library.Colors.onSurfaceVariant)
 		applyCorner(pageButton, TOKENS.radius.full)
-		applyPadding(pageButton, 0, 18, 0, 28)
-		local indicator = create("Frame", {
-			Name = "Indicator",
-			AnchorPoint = Vector2.new(0, 0.5),
-			Position = UDim2.new(0, 12, 0.5, 0),
-			Size = UDim2.fromOffset(4, 18),
-			BackgroundColor3 = self.Library.Colors.primary,
-			BackgroundTransparency = 1,
-			BorderSizePixel = 0,
-		})
-		applyCorner(indicator, TOKENS.radius.full)
-		indicator.Parent = pageButton
+		applyPadding(pageButton, 0, 18, 0, 18)
 		createStateLayer(pageButton, TOKENS.radius.full)
 		pageButton.Parent = self.TabsHost
 	end
@@ -1809,21 +1779,11 @@ function Window:CreatePage(config)
 	bindThemeUpdater(self, function(colors)
 		if pageButton then
 			if self.CurrentPage == page then
-				pageButton.BackgroundColor3 = colors.secondaryContainer
-				pageButton.TextColor3 = colors.onSecondaryContainer
-				local indicator = pageButton:FindFirstChild("Indicator")
-				if indicator then
-					indicator.BackgroundColor3 = colors.primary
-					indicator.BackgroundTransparency = 0
-				end
+				pageButton.BackgroundColor3 = colors.surfaceContainerHigh
+				pageButton.TextColor3 = colors.onSurface
 			else
 				pageButton.BackgroundColor3 = colors.surface
 				pageButton.TextColor3 = colors.onSurfaceVariant
-				local indicator = pageButton:FindFirstChild("Indicator")
-				if indicator then
-					indicator.BackgroundColor3 = colors.primary
-					indicator.BackgroundTransparency = 1
-				end
 			end
 			local stateLayer = pageButton:FindFirstChild("StateLayer")
 			if stateLayer then
@@ -2441,7 +2401,7 @@ function Section:CreateColorPicker(config)
 		AutoButtonColor = false,
 		Text = "",
 	})
-	applyCorner(button, TOKENS.radius.medium)
+	applyCorner(button, TOKENS.radius.large)
 	applyStroke(button, colors.outlineVariant, 0.76, 1)
 	button.Parent = holder
 
@@ -2514,7 +2474,7 @@ function Section:CreateColorPicker(config)
 		BackgroundColor3 = Color3.fromHSV(hue, 1, 1),
 		BorderSizePixel = 0,
 	})
-	applyCorner(svBox, TOKENS.radius.medium)
+	applyCorner(svBox, TOKENS.radius.large)
 	svBox.Parent = panel
 
 	local svWhite = create("Frame", {
@@ -2523,7 +2483,7 @@ function Section:CreateColorPicker(config)
 		BackgroundColor3 = Color3.new(1, 1, 1),
 		BorderSizePixel = 0,
 	})
-	applyCorner(svWhite, TOKENS.radius.medium)
+	applyCorner(svWhite, TOKENS.radius.large)
 	local svWhiteGradient = Instance.new("UIGradient")
 	svWhiteGradient.Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.new(1, 1, 1))
 	svWhiteGradient.Transparency = NumberSequence.new({
@@ -2540,7 +2500,7 @@ function Section:CreateColorPicker(config)
 		BackgroundColor3 = Color3.new(0, 0, 0),
 		BorderSizePixel = 0,
 	})
-	applyCorner(svBlack, TOKENS.radius.medium)
+	applyCorner(svBlack, TOKENS.radius.large)
 	local svBlackGradient = Instance.new("UIGradient")
 	svBlackGradient.Color = ColorSequence.new(Color3.new(0, 0, 0), Color3.new(0, 0, 0))
 	svBlackGradient.Transparency = NumberSequence.new({
@@ -2618,7 +2578,7 @@ function Section:CreateColorPicker(config)
 		TextXAlignment = Enum.TextXAlignment.Left,
 		ClearTextOnFocus = false,
 	})
-	applyCorner(hexBox, TOKENS.radius.medium)
+	applyCorner(hexBox, TOKENS.radius.large)
 	applyStroke(hexBox, colors.outlineVariant, 0.7, 1)
 	applyPadding(hexBox, 0, 14, 0, 14)
 	applyTextStyle(hexBox, "bodyLarge", colors.onSurface)
@@ -3099,7 +3059,7 @@ function Section:CreateDropdown(config)
 		AutoButtonColor = false,
 		Text = "",
 	})
-	applyCorner(button, TOKENS.radius.medium)
+	applyCorner(button, TOKENS.radius.large)
 	applyStroke(button, colors.outlineVariant, 0.76, 1)
 	button.Parent = holder
 
@@ -3133,7 +3093,7 @@ function Section:CreateDropdown(config)
 		Visible = false,
 		BackgroundTransparency = 1,
 	})
-	applyCorner(menu, TOKENS.radius.medium)
+	applyCorner(menu, TOKENS.radius.large)
 	applyStroke(menu, colors.outlineVariant, 1, 1)
 	applyPadding(menu, 8, 8, 8, 8)
 	menu.Parent = holder
@@ -3275,7 +3235,7 @@ function Section:CreateDropdown(config)
 			AutoButtonColor = false,
 		})
 		applyTextStyle(option, "bodyMedium", colors.onSurface)
-		applyCorner(option, TOKENS.radius.small)
+		applyCorner(option, TOKENS.radius.large)
 		applyPadding(option, 0, 14, 0, 14)
 		option.Parent = menu
 
@@ -3285,9 +3245,9 @@ function Section:CreateDropdown(config)
 				Name = "Check",
 				AnchorPoint = Vector2.new(1, 0.5),
 				Position = UDim2.new(1, 0, 0.5, 0),
-				Size = UDim2.fromOffset(20, 20),
+				Size = UDim2.fromOffset(28, 20),
 				BackgroundTransparency = 1,
-				Text = "☐",
+				Text = "[ ]",
 				TextXAlignment = Enum.TextXAlignment.Center,
 				TextYAlignment = Enum.TextYAlignment.Center,
 			})
@@ -3300,7 +3260,7 @@ function Section:CreateDropdown(config)
 			option.BackgroundColor3 = active and colors.secondaryContainer or colors.surfaceContainer
 			option.TextColor3 = active and colors.onSecondaryContainer or colors.onSurface
 			if checkMark then
-				checkMark.Text = active and "☑" or "☐"
+				checkMark.Text = active and "[x]" or "[ ]"
 				checkMark.TextColor3 = active and colors.onSecondaryContainer or colors.onSurfaceVariant
 			end
 		end
@@ -3318,7 +3278,7 @@ function Section:CreateDropdown(config)
 					child.BackgroundColor3 = active and colors.secondaryContainer or colors.surfaceContainer
 					child.TextColor3 = active and colors.onSecondaryContainer or colors.onSurface
 					if mark and mark:IsA("TextLabel") then
-						mark.Text = active and "☑" or "☐"
+						mark.Text = active and "[x]" or "[ ]"
 						mark.TextColor3 = active and colors.onSecondaryContainer or colors.onSurfaceVariant
 					end
 				end
